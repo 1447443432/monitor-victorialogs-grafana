@@ -26,7 +26,7 @@ RUN mkdir -p /out/usr/local/victorialogs /out/usr/local/grafana /out/opt/grafana
     && cp -r /tmp/provisioning/dashboards/* /out/usr/local/grafana/conf/provisioning/dashboards/ \
     && sed -i 's#${DS_VICTORIAMETRICS-LOGS-DATASOURCE}#victorialogs#g' /out/usr/local/grafana/conf/provisioning/dashboards/*.json \
     && chmod +x /out/usr/local/victorialogs/victoria-logs-prod /out/usr/local/grafana/bin/grafana \
-    && rm -rf /out/usr/local/grafana/docs /out/usr/local/grafana/tools /out/usr/local/grafana/storybook /out/usr/local/grafana/npm-artifacts /out/usr/local/grafana/packaging /out/usr/local/grafana/.github /out/usr/local/grafana/devenv /out/usr/local/grafana/e2e /out/usr/local/grafana/kinds /out/usr/local/grafana/scripts /out/usr/local/grafana/pkg /out/usr/local/grafana/emails /out/usr/local/grafana/Dockerfile /out/usr/local/grafana/README.md /out/usr/local/grafana/NOTICE.md /out/usr/local/grafana/LICENSE /out/usr/local/grafana/*.md
+    && rm -rf /out/usr/local/grafana/docs /out/usr/local/grafana/tools /out/usr/local/grafana/storybook /out/usr/local/grafana/npm-artifacts /out/usr/local/grafana/packaging /out/usr/local/grafana/.github /out/usr/local/grafana/devenv /out/usr/local/grafana/e2e /out/usr/local/grafana/kinds /out/usr/local/grafana/scripts /out/usr/local/grafana/pkg /out/usr/local/grafana/emails /out/usr/local/grafana/Dockerfile /out/usr/local/grafana/README.md /out/usr/local/grafana/NOTICE.md /out/usr/local/grafana/LICENSE
 
 FROM ${BASE_IMAGE}
 
