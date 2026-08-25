@@ -1,0 +1,12 @@
+.git
+*.log
+logs
+data
+tmp
+*.tar
+*.zip
+*.bak
+*.old
+
+!packages/
+!packages/*.tar.gz

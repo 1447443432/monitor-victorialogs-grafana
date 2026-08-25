@@ -1,0 +1,280 @@
+name: Image Make
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - agents/**
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "请选择：build-release（构建发布）、pull-release（已有阿里云镜像发布）、build-push-release（构建并推送后发布）"
+        required: true
+        default: build-release
+        type: choice
+        options: [build-release, pull-release, build-push-release]
+      tag:
+        description: "Release 标签；留空使用 latest，不会自动追加到镜像地址"
+        required: false
+        default: ''
+        type: string
+      architectures:
+        description: "选择架构：amd64、arm64 或 all（两个架构）"
+        required: true
+        default: all
+        type: choice
+        options: [amd64, arm64, all]
+      target_image_amd64:
+        description: "amd64 主镜像地址；留空使用项目配置，未填 Tag 时使用 latest"
+        required: false
+        default: ''
+        type: string
+      target_image_arm64:
+        description: "arm64 主镜像地址；留空使用项目配置，未填 Tag 时使用 latest"
+        required: false
+        default: ''
+        type: string
+      aliyun_image_amd64:
+        description: "阿里云 amd64 镜像地址；留空复用主 amd64 地址"
+        required: false
+        default: ''
+        type: string
+      aliyun_image_arm64:
+        description: "阿里云 arm64 镜像地址；留空复用主 arm64 地址"
+        required: false
+        default: ''
+        type: string
+      create_release:
+        description: "是否创建 GitHub Release；开启后上传镜像包和 SHA256"
+        required: true
+        default: true
+        type: boolean
+      notify_hap:
+        description: "是否发送 HAP 通知；开启后需配置 HAP_WEBHOOK_URL"
+        required: true
+        default: false
+        type: boolean
+
+env:
+  WORKFLOW_OPERATION: ${{ github.event_name == 'push' && 'auto' || inputs.operation }}
+  WORKFLOW_ARCHITECTURES: ${{ inputs.architectures }}
+  REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME || secrets.ALIYUN_REGISTRY_USERNAME }}
+  REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD || secrets.ALIYUN_REGISTRY_PASSWORD }}
+  BASE_REGISTRY_USERNAME: ${{ secrets.BASE_REGISTRY_USERNAME }}
+  BASE_REGISTRY_PASSWORD: ${{ secrets.BASE_REGISTRY_PASSWORD }}
+  ALIYUN_REGISTRY: ${{ vars.ALIYUN_REGISTRY }}
+  ALIYUN_REGISTRY_USERNAME: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
+  ALIYUN_REGISTRY_PASSWORD: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Validate GitHub Actions workflows
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint@sha256:9d36088643581e728c969f35141f88139fec77280b2be23c1f66f8e40e1025e7
+        with:
+          args: -color
+      - name: Test release manifest
+        run: python3 .github/image-make/test_release.py
+
+  config:
+    needs: lint
+    name: Check module configuration
+    runs-on: ubuntu-24.04
+    outputs:
+      operation: ${{ steps.check.outputs.operation }}
+      tag: ${{ steps.check.outputs.tag }}
+      release_name: ${{ steps.check.outputs.release_name }}
+      architectures: ${{ steps.check.outputs.architectures }}
+      target_image_amd64: ${{ steps.check.outputs.target_image_amd64 }}
+      target_image_arm64: ${{ steps.check.outputs.target_image_arm64 }}
+      aliyun_image_amd64: ${{ steps.check.outputs.aliyun_image_amd64 }}
+      aliyun_image_arm64: ${{ steps.check.outputs.aliyun_image_arm64 }}
+      aliyun_registry: ${{ steps.check.outputs.aliyun_registry }}
+      aliyun_push_enabled: ${{ steps.check.outputs.aliyun_push_enabled }}
+      aliyun_pull_enabled: ${{ steps.check.outputs.aliyun_pull_enabled }}
+      release_image_source: ${{ steps.check.outputs.release_image_source }}
+      release_enabled: ${{ steps.check.outputs.release_enabled }}
+      hap_enabled: ${{ steps.check.outputs.hap_enabled }}
+      dockerfile: ${{ steps.check.outputs.dockerfile }}
+      build_context: ${{ steps.check.outputs.build_context }}
+      alpine_mirror: ${{ steps.check.outputs.alpine_mirror }}
+      alpine_version: ${{ steps.check.outputs.alpine_version }}
+      base_image_amd64: ${{ steps.check.outputs.base_image_amd64 }}
+      base_image_arm64: ${{ steps.check.outputs.base_image_arm64 }}
+      can_primary: ${{ steps.check.outputs.can_primary }}
+      can_aliyun: ${{ steps.check.outputs.can_aliyun }}
+      can_build: ${{ steps.check.outputs.can_build }}
+      can_package: ${{ steps.check.outputs.can_package }}
+      can_release: ${{ steps.check.outputs.can_release }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - id: check
+        env:
+          CONFIG_FILE: .image-build.env
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_TARGET_IMAGE_AMD64: ${{ inputs.target_image_amd64 }}
+          INPUT_TARGET_IMAGE_ARM64: ${{ inputs.target_image_arm64 }}
+          INPUT_ALIYUN_IMAGE_AMD64: ${{ inputs.aliyun_image_amd64 }}
+          INPUT_ALIYUN_IMAGE_ARM64: ${{ inputs.aliyun_image_arm64 }}
+          INPUT_CREATE_RELEASE: ${{ inputs.create_release }}
+          INPUT_NOTIFY_HAP: ${{ inputs.notify_hap }}
+          VAR_IMAGE_TAG: ${{ vars.IMAGE_TAG }}
+          VAR_RELEASE_NAME: ${{ vars.RELEASE_NAME }}
+          VAR_BASE_IMAGE_AMD64: ${{ vars.BASE_IMAGE_AMD64 }}
+          VAR_BASE_IMAGE_ARM64: ${{ vars.BASE_IMAGE_ARM64 }}
+          VAR_TARGET_IMAGE_AMD64: ${{ vars.TARGET_IMAGE_AMD64 }}
+          VAR_TARGET_IMAGE_ARM64: ${{ vars.TARGET_IMAGE_ARM64 }}
+          VAR_ALIYUN_REGISTRY: ${{ vars.ALIYUN_REGISTRY }}
+          VAR_ALIYUN_IMAGE_AMD64: ${{ vars.ALIYUN_IMAGE_AMD64 }}
+          VAR_ALIYUN_IMAGE_ARM64: ${{ vars.ALIYUN_IMAGE_ARM64 }}
+          VAR_PUSH_OPERATION: ${{ vars.PUSH_OPERATION }}
+          VAR_ENABLE_ALIYUN_PUSH: ${{ vars.ENABLE_ALIYUN_PUSH }}
+          VAR_ENABLE_RELEASE: ${{ vars.ENABLE_RELEASE }}
+          VAR_ENABLE_HAP_WEBHOOK: ${{ vars.ENABLE_HAP_WEBHOOK }}
+          ALIYUN_USERNAME: ${{ env.ALIYUN_REGISTRY_USERNAME || env.REGISTRY_USERNAME }}
+          ALIYUN_PASSWORD: ${{ env.ALIYUN_REGISTRY_PASSWORD || env.REGISTRY_PASSWORD }}
+          ALIYUN_REGISTRY: ${{ env.ALIYUN_REGISTRY }}
+          OPERATION: ${{ env.WORKFLOW_OPERATION }}
+          WORKFLOW_ARCHITECTURES: ${{ env.WORKFLOW_ARCHITECTURES }}
+          HAP_WEBHOOK_URL: ${{ secrets.HAP_WEBHOOK_URL }}
+        run: python3 .github/image-make/config.py
+
+  build:
+    needs: config
+    if: ${{ needs.config.outputs.can_build == 'true' && needs.config.outputs.operation != 'pull-release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ${{ fromJSON(needs.config.outputs.architectures) }}
+    runs-on: ${{ matrix.architecture == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Build architecture image
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+          PLATFORM: ${{ matrix.architecture == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
+          RUNNER: ${{ matrix.architecture == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+          TARGET_IMAGE: ${{ matrix.architecture == 'amd64' && needs.config.outputs.target_image_amd64 || needs.config.outputs.target_image_arm64 }}
+          ALIYUN_IMAGE_OVERRIDE: ${{ matrix.architecture == 'amd64' && needs.config.outputs.aliyun_image_amd64 || needs.config.outputs.aliyun_image_arm64 }}
+          ALIYUN_REGISTRY: ${{ needs.config.outputs.aliyun_registry }}
+          ALIYUN_USERNAME: ${{ env.ALIYUN_REGISTRY_USERNAME || env.REGISTRY_USERNAME }}
+          ALIYUN_PASSWORD: ${{ env.ALIYUN_REGISTRY_PASSWORD || env.REGISTRY_PASSWORD }}
+          BASE_REGISTRY_USERNAME: ${{ env.BASE_REGISTRY_USERNAME }}
+          BASE_REGISTRY_PASSWORD: ${{ env.BASE_REGISTRY_PASSWORD }}
+          BASE_IMAGE: ${{ matrix.architecture == 'amd64' && needs.config.outputs.base_image_amd64 || needs.config.outputs.base_image_arm64 }}
+          PUSH_ALIYUN: ${{ needs.config.outputs.can_aliyun }}
+          RELEASE_ENABLED: ${{ needs.config.outputs.release_enabled }}
+          RELEASE_NAME: ${{ needs.config.outputs.release_name }}
+          RELEASE_TAG: ${{ needs.config.outputs.tag }}
+          DOCKERFILE: ${{ needs.config.outputs.dockerfile }}
+          BUILD_CONTEXT: ${{ needs.config.outputs.build_context }}
+          ALPINE_MIRROR: ${{ needs.config.outputs.alpine_mirror }}
+          ALPINE_VERSION: ${{ needs.config.outputs.alpine_version }}
+        run: bash .github/image-make/build.sh
+      - name: Upload locally built image package
+        if: ${{ needs.config.outputs.release_enabled == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: release-${{ matrix.architecture }}
+          path: release-assets/*
+          if-no-files-found: error
+
+  package:
+    needs: [config, build]
+    if: ${{ always() && needs.config.outputs.can_package == 'true' && ((needs.config.outputs.operation == 'pull-release' && needs.build.result == 'skipped') || (needs.config.outputs.operation != 'pull-release' && needs.build.result == 'success')) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ${{ fromJSON(needs.config.outputs.architectures) }}
+    runs-on: ${{ matrix.architecture == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Download packages from build jobs
+        if: ${{ needs.config.outputs.operation != 'pull-release' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-${{ matrix.architecture }}
+          path: release-assets
+      - name: Package or verify architecture image
+        env:
+          PACKAGE_MODE: ${{ needs.config.outputs.operation == 'pull-release' && 'pull-release' || 'verify' }}
+          ARCHITECTURE: ${{ matrix.architecture }}
+          TARGET_IMAGE: ${{ matrix.architecture == 'amd64' && needs.config.outputs.target_image_amd64 || needs.config.outputs.target_image_arm64 }}
+          ALIYUN_IMAGE: ${{ matrix.architecture == 'amd64' && needs.config.outputs.aliyun_image_amd64 || needs.config.outputs.aliyun_image_arm64 }}
+          ALIYUN_REGISTRY: ${{ needs.config.outputs.aliyun_registry }}
+          ALIYUN_USERNAME: ${{ env.ALIYUN_REGISTRY_USERNAME || env.REGISTRY_USERNAME }}
+          ALIYUN_PASSWORD: ${{ env.ALIYUN_REGISTRY_PASSWORD || env.REGISTRY_PASSWORD }}
+          RELEASE_NAME: ${{ needs.config.outputs.release_name }}
+          RELEASE_TAG: ${{ needs.config.outputs.tag }}
+        run: bash .github/image-make/package.sh
+      - name: Upload pull-release package
+        if: ${{ needs.config.outputs.operation == 'pull-release' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: release-${{ matrix.architecture }}
+          path: release-assets/*
+          if-no-files-found: error
+
+  release:
+    needs: [config, build, package]
+    if: ${{ always() && needs.config.outputs.can_release == 'true' && needs.package.result == 'success' && (needs.config.outputs.operation == 'pull-release' || needs.build.result == 'success') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Create release manifest and summary
+        env:
+          RELEASE_NAME: ${{ needs.config.outputs.release_name }}
+          RELEASE_TAG: ${{ needs.config.outputs.tag }}
+          TARGET_IMAGE_AMD64: ${{ needs.config.outputs.target_image_amd64 }}
+          TARGET_IMAGE_ARM64: ${{ needs.config.outputs.target_image_arm64 }}
+          ALIYUN_IMAGE_AMD64: ${{ needs.config.outputs.aliyun_image_amd64 }}
+          ALIYUN_IMAGE_ARM64: ${{ needs.config.outputs.aliyun_image_arm64 }}
+          ALIYUN_REGISTRY: ${{ needs.config.outputs.aliyun_registry }}
+          RELEASE_IMAGE_SOURCE: ${{ needs.config.outputs.release_image_source }}
+          HAP_ENABLED: ${{ needs.config.outputs.hap_enabled }}
+          HAP_WEBHOOK_URL: ${{ secrets.HAP_WEBHOOK_URL }}
+        run: python3 .github/image-make/release.py
+      - uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e
+        with:
+          tag_name: ${{ needs.config.outputs.tag }}
+          name: ${{ needs.config.outputs.tag }}
+          generate_release_notes: true
+          files: release-assets/*
+      - name: Notify HAP Webhook
+        if: ${{ needs.config.outputs.hap_enabled == 'true' && env.HAP_WEBHOOK_URL != '' }}
+        env:
+          HAP_WEBHOOK_URL: ${{ secrets.HAP_WEBHOOK_URL }}
+          HAP_WEBHOOK_APP_KEY: ${{ secrets.HAP_WEBHOOK_APP_KEY }}
+          HAP_WEBHOOK_SIGN: ${{ secrets.HAP_WEBHOOK_SIGN }}
+        run: |
+          echo "========== HAP Webhook =========="
+          echo "[INFO] notifying HAP Webhook..."
+          headers=(-H 'Content-Type: application/json')
+          [[ -z "${HAP_WEBHOOK_APP_KEY:-}" ]] || headers+=(-H "AppKey: $HAP_WEBHOOK_APP_KEY")
+          [[ -z "${HAP_WEBHOOK_SIGN:-}" ]] || headers+=(-H "Sign: $HAP_WEBHOOK_SIGN")
+          if curl --fail-with-body --retry 2 --connect-timeout 10 --max-time 60 -sS -X POST "$HAP_WEBHOOK_URL" "${headers[@]}" --data-binary @release-assets/release-manifest.json; then
+            echo "[OK] HAP Webhook"
+          else
+            echo "[ERROR] HAP Webhook failed"
+            exit 1
+          fi

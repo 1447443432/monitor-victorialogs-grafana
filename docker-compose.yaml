@@ -1,0 +1,100 @@
+services:
+  hap-monitor-logs:
+    image: registry.cn-hangzhou.aliyuncs.com/hap-mdy/hap-monitor-victorialogs-grafana-amd64:1.0.0
+    container_name: hap-monitor-logs
+    restart: always
+    ports:
+      # VictoriaLogs HTTP API
+      - "9428:9428"
+      # Grafana Web UI
+      - "3000:3000"
+    # 数据持久化
+    volumes:
+      # VictoriaLogs 数据目录
+      - /data/victorialogs:/data/victorialogs
+      # Grafana 数据目录
+      - /data/grafana:/usr/local/grafana/data
+    environment:
+      # 时区
+      TZ: Asia/Shanghai
+      # Go Runtime Heap 限制
+      # 建议 <= mem_limit
+      GOMEMLIMIT: 2GiB
+      #####################################################################
+      # VictoriaLogs
+      #####################################################################
+      # 数据目录
+      VL_STORAGE_DATA_PATH: /data/victorialogs
+      # HTTP 监听地址
+      VL_HTTP_LISTEN_ADDR: ":9428"
+      # Basic Auth
+      VL_HTTP_AUTH_USERNAME: myuser
+      VL_HTTP_AUTH_PASSWORD: mypassword
+      # 数据保留时间
+      VL_RETENTION_PERIOD: 30d
+      # 最大磁盘占用
+      VL_RETENTION_DISK_USAGE: 50GiB
+      # 内部 cache 百分比
+      VL_MEMORY_ALLOWED_PERCENT: "2"
+      # 写入并发
+      VL_MAX_CONCURRENT_INSERTS: "4"
+      # 查询并发
+      VL_MAX_CONCURRENT_REQUESTS: "2"
+      # 查询超时
+      VL_SEARCH_MAX_QUERY_DURATION: 30s
+      # 最大查询时间范围
+      VL_SEARCH_MAX_QUERY_TIMERANGE: 24h
+      # 查询排队超时
+      VL_SEARCH_MAX_QUEUE_DURATION: 5s
+      # 慢查询日志阈值
+      VL_SEARCH_LOG_SLOW_QUERY_DURATION: 3s
+      # 单行日志最大大小
+      VL_INSERT_MAX_LINE_SIZE_BYTES: "262144"
+      # 单行最大字段数
+      VL_INSERT_MAX_FIELDS_PER_LINE: "300"
+      # syslog 附加字段
+      VL_SYSLOG_EXTRA_FIELDS_TCP: '{"job":"rsyslog"}'
+      # 日志级别
+      VL_LOGGER_LEVEL: INFO
+      #####################################################################
+      # Grafana
+      #####################################################################
+      # Grafana 子路径
+      #GRAFANA_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/grafana/"
+      GRAFANA_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/"
+      # 开启子路径模式
+      GRAFANA_SERVER_SERVE_FROM_SUB_PATH: "true"
+      # Grafana 默认管理员账号
+      GRAFANA_ADMIN_USER: admin
+      # Grafana 默认管理员密码
+      GRAFANA_ADMIN_PASSWORD: admin@123456
+      # 允许加载未签名插件
+      GRAFANA_ALLOW_UNSIGNED_PLUGINS: victoriametrics-logs-datasource
+      #####################################################################
+      # VictoriaLogs Grafana Datasource
+      #####################################################################
+      # VictoriaLogs 地址
+      GRAFANA_VL_DATASOURCE_URL: http://127.0.0.1:9428
+      # VictoriaLogs Basic Auth 用户名
+      GRAFANA_VL_BASIC_AUTH_USER: myuser
+      # VictoriaLogs Basic Auth 密码
+      GRAFANA_VL_BASIC_AUTH_PASSWORD: mypassword
+    # 内存限制
+    mem_limit: 3g
+    # swap 限制
+    memswap_limit: 3g
+    # CPU 限制
+    cpus: 2.0
+    # 文件句柄限制
+    ulimits:
+      nofile:
+        soft: 102400
+        hard: 102400
+    # Docker 日志限制
+    logging:
+      driver: json-file
+      options:
+        # 单日志文件大小
+        max-size: "100m"
+        # 保留日志文件数量
+        max-file: "3"
