@@ -20,7 +20,7 @@ RUN mkdir -p /out/usr/local/victorialogs /out/var/lib/grafana/plugins/victoriame
     && rm -f /out/var/lib/grafana/plugins/victoriametrics-logs-datasource/MANIFEST.txt \
     && cp -r /tmp/provisioning/datasources/* /out/etc/grafana/provisioning/datasources/ \
     && cp -r /tmp/provisioning/dashboards/* /out/etc/grafana/provisioning/dashboards/ \
-    && sed -i 's#${DS_VICTORIAMETRICS-LOGS-DATASOURCE}#victorialogs#g' /out/etc/grafana/provisioning/dashboards/*.json \
+    && sed -i 's#${DS_VICTORIALOGS}#victorialogs#g' /out/etc/grafana/provisioning/dashboards/*.json \
     && chmod +x /out/usr/local/victorialogs/victoria-logs-prod \
     && find /out/var/lib/grafana/plugins -type f -name 'victoriametrics_logs_backend_plugin_*' -exec chmod +x {} +
 
