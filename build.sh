@@ -32,7 +32,7 @@ REGISTRY="registry.cn-hangzhou.aliyuncs.com/hap-mdy"
 
 IMAGE_BASE_NAME="hap-monitor-victorialogs-grafana"
 
-IMAGE_TAG="1.0.0"
+IMAGE_TAG="1.1.0"
 
 ###############################################################################
 # 自动识别主机架构

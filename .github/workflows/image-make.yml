@@ -280,3 +280,81 @@ jobs:
             echo "[ERROR] HAP Webhook failed"
             exit 1
           fi
+
+  cleanup:
+    needs: [config, build, package, release]
+    name: Clean old workflow runs
+    if: >-
+      always() &&
+      needs.config.result == 'success' &&
+      needs.build.result != 'failure' &&
+      needs.build.result != 'cancelled' &&
+      needs.package.result != 'failure' &&
+      needs.package.result != 'cancelled' &&
+      needs.release.result != 'failure' &&
+      needs.release.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Remove completed workflow runs except current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          workflow_file="${WORKFLOW_REF#*/.github/workflows/}"
+          workflow_file="${workflow_file%@*}"
+          endpoint="repos/${REPOSITORY}/actions/workflows/${workflow_file}/runs?status=completed&per_page=100"
+
+          echo "[INFO] current run: ${CURRENT_RUN_ID}"
+          echo "[INFO] workflow file: ${workflow_file}"
+
+          completed_runs="$(
+            gh api --paginate "${endpoint}" \
+              | jq -s -r --arg current_run_id "${CURRENT_RUN_ID}" '
+                [.[].workflow_runs[]
+                  | select(.status == "completed")
+                  | select((.id | tostring) != $current_run_id)
+                ]
+                | sort_by(.created_at)
+                | .[]
+                | [.id, .run_number, .conclusion, .created_at]
+                | @tsv
+              '
+          )"
+
+          deleted=0
+          failed=()
+          echo "[INFO] completed runs selected for deletion:"
+          if [[ -z "${completed_runs}" ]]; then
+            echo "[INFO] none"
+          else
+            while IFS=$'\t' read -r run_id run_number conclusion created_at; do
+              [[ -z "${run_id}" ]] && continue
+              echo "[INFO] deleting run ${run_id} (#${run_number}, ${conclusion}, ${created_at})"
+              if gh api --method DELETE "repos/${REPOSITORY}/actions/runs/${run_id}"; then
+                deleted=$((deleted + 1))
+              else
+                failed+=("${run_id}")
+                echo "[ERROR] failed to delete run ${run_id}"
+              fi
+            done <<< "${completed_runs}"
+          fi
+
+          {
+            echo "## Workflow run cleanup"
+            echo "- Current run kept: \`${CURRENT_RUN_ID}\`"
+            echo "- Completed runs deleted: ${deleted}"
+            if ((${#failed[@]} > 0)); then
+              echo "- Failed deletions: \`${failed[*]}\`"
+            else
+              echo "- Failed deletions: none"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"

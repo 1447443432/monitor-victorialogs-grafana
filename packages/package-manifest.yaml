@@ -1,0 +1,66 @@
+schema_version: 1
+checked_at: "2026-10-26"
+download_directory: packages
+status: manual_download_required
+
+# Download settings used by download-packages.cmd and download-packages.ps1.
+# Proxy can be overridden for each package below after testing its download URL.
+download:
+  use_proxy: true
+  proxy: http://127.0.0.1:7897
+
+# Download each package to download_directory, then verify its SHA256 before building.
+components:
+  victorialogs:
+    version: v1.53.0
+    released_at: "2026-10-01T11:20:01Z"
+    release_url: https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.53.0
+    packages:
+      amd64:
+        filename: victoria-logs-linux-amd64-v1.53.0.tar.gz
+        use_proxy: true
+        size_bytes: 13045280
+        url: https://github.com/VictoriaMetrics/VictoriaLogs/releases/download/v1.53.0/victoria-logs-linux-amd64-v1.53.0.tar.gz
+        checksum_url: https://github.com/VictoriaMetrics/VictoriaLogs/releases/download/v1.53.0/victoria-logs-linux-amd64-v1.53.0_checksums.txt
+        sha256: 55feba89713cafa952673f91b8b38e7701bb0290989263da671b47a0de16edd3
+      arm64:
+        filename: victoria-logs-linux-arm64-v1.53.0.tar.gz
+        use_proxy: true
+        size_bytes: 11755444
+        url: https://github.com/VictoriaMetrics/VictoriaLogs/releases/download/v1.53.0/victoria-logs-linux-arm64-v1.53.0.tar.gz
+        checksum_url: https://github.com/VictoriaMetrics/VictoriaLogs/releases/download/v1.53.0/victoria-logs-linux-arm64-v1.53.0_checksums.txt
+        sha256: 301b7ef12ff9fac7f70b155191affe07ac6212755514174461d775548699ef96
+
+  grafana:
+    version: 13.2.4
+    build: "38252365904"
+    released_at: "2026-10-13T11:41:03Z"
+    release_url: https://github.com/grafana/grafana/releases/tag/v13.2.4
+    packages:
+      amd64:
+        filename: grafana_13.2.4_38252365904_linux_amd64.tar.gz
+        use_proxy: false
+        size_bytes: 461295109
+        url: https://dl.grafana.com/grafana/release/13.2.4/grafana_13.2.4_38252365904_linux_amd64.tar.gz
+        checksum_url: https://dl.grafana.com/grafana/release/13.2.4/grafana_13.2.4_38252365904_linux_amd64.tar.gz.sha256
+        sha256: c48765988fd88572607e4ea670251af8a8e64ab3e360d0f3cf67a6f3587b92ab
+      arm64:
+        filename: grafana_13.2.4_38252365904_linux_arm64.tar.gz
+        use_proxy: false
+        size_bytes: 430634089
+        url: https://dl.grafana.com/grafana/release/13.2.4/grafana_13.2.4_38252365904_linux_arm64.tar.gz
+        checksum_url: https://dl.grafana.com/grafana/release/13.2.4/grafana_13.2.4_38252365904_linux_arm64.tar.gz.sha256
+        sha256: 9517a0d21e2706b54521fbd720803698bba42859ca179e9905cc6b8fb05d67ab
+
+  victorialogs_datasource:
+    version: v0.33.1
+    released_at: "2026-10-16T12:34:53Z"
+    release_url: https://github.com/VictoriaMetrics/victorialogs-datasource/releases/tag/v0.33.1
+    packages:
+      all:
+        filename: victoriametrics-logs-datasource-v0.33.1.tar.gz
+        use_proxy: true
+        size_bytes: 79396506
+        url: https://github.com/VictoriaMetrics/victorialogs-datasource/releases/download/v0.33.1/victoriametrics-logs-datasource-v0.33.1.tar.gz
+        checksum_url: https://github.com/VictoriaMetrics/victorialogs-datasource/releases/download/v0.33.1/victoriametrics-logs-datasource-v0.33.1_checksums_tar.gz.txt
+        sha256: 849edf4d86a6555bbf3fdbe1c53ed719a6c51c3d69965dcc0384e2c129ad991a

@@ -1,0 +1,64 @@
+services:
+  hap-monitor-logs:
+    image: registry.cn-hangzhou.aliyuncs.com/hap-mdy/hap-monitor-victorialogs-grafana-amd64:1.1.0
+    container_name: hap-monitor-logs
+    restart: always
+    ports:
+      - "9428:9428" # VictoriaLogs API
+      - "3000:3000" # Grafana
+    volumes:
+      - /data/victorialogs:/data/victorialogs
+      - /data/grafana:/usr/local/grafana/data
+    environment:
+      # 服务模式：all / victorialogs / grafana；未配置或为空时为 all
+      MONITOR_SERVICES: all
+
+      # 时区与 Go 内存上限
+      TZ: Asia/Shanghai
+      GOMEMLIMIT: 2GiB
+
+      # 统一认证：VictoriaLogs、Alloy 写入和 Grafana 数据源共用
+      MONITOR_AUTH_USERNAME: myuser
+      MONITOR_AUTH_PASSWORD: mypassword
+
+      # VictoriaLogs 参数；以下均为默认值，可按需覆盖
+      VL_STORAGE_DATA_PATH: /data/victorialogs
+      VL_HTTP_LISTEN_ADDR: ":9428"
+      VL_RETENTION_PERIOD: 30d
+      VL_RETENTION_DISK_USAGE: 50GiB
+      VL_MEMORY_ALLOWED_PERCENT: "2"
+      VL_MAX_CONCURRENT_INSERTS: "4"
+      VL_MAX_CONCURRENT_REQUESTS: "2"
+      VL_SEARCH_MAX_QUERY_DURATION: 30s
+      VL_SEARCH_MAX_QUERY_TIMERANGE: 24h
+      VL_SEARCH_MAX_QUEUE_DURATION: 5s
+      VL_SEARCH_LOG_SLOW_QUERY_DURATION: 3s
+      VL_INSERT_MAX_LINE_SIZE_BYTES: "262144"
+      VL_INSERT_MAX_FIELDS_PER_LINE: "300"
+      VL_SYSLOG_EXTRA_FIELDS_TCP: '{"job":"rsyslog"}'
+      VL_LOGGER_LEVEL: INFO
+
+      # Grafana 外部访问地址；反向代理或子路径部署时修改
+      GRAFANA_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/"
+      # ROOT_URL 含子路径为 true；根路径访问为 false
+      GRAFANA_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GRAFANA_ADMIN_USER: admin
+      GRAFANA_ADMIN_PASSWORD: admin@123456
+      GRAFANA_ALLOW_UNSIGNED_PLUGINS: victoriametrics-logs-datasource
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /usr/local/grafana/conf/provisioning/dashboards/home-page-tags.json
+
+      # Grafana 查询地址；仅 grafana 模式时改为外部 VictoriaLogs 地址
+      GRAFANA_VL_DATASOURCE_URL: http://127.0.0.1:9428
+
+    mem_limit: 3g
+    memswap_limit: 3g
+    cpus: 2.0
+    ulimits:
+      nofile:
+        soft: 102400
+        hard: 102400
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"

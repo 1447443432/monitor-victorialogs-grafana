@@ -1,0 +1,42 @@
+ARG BASE_IMAGE=alpine:3.23
+FROM ${BASE_IMAGE} AS components
+
+ARG TARGETARCH=amd64
+ARG VL_PACKAGE=packages/victoria-logs-linux-${TARGETARCH}-v1.53.0.tar.gz
+ARG VL_PLUGIN_PACKAGE=packages/victoriametrics-logs-datasource-v0.33.1.tar.gz
+
+COPY ${VL_PACKAGE} /tmp/victoria-logs.tar.gz
+COPY ${VL_PLUGIN_PACKAGE} /tmp/vl-plugin.tar.gz
+COPY provisioning /tmp/provisioning
+
+RUN mkdir -p /out/usr/local/victorialogs /out/var/lib/grafana/plugins/victoriametrics-logs-datasource /out/etc/grafana/provisioning/datasources /out/etc/grafana/provisioning/dashboards \
+    && tar xzf /tmp/victoria-logs.tar.gz -C /out/usr/local/victorialogs \
+    && mkdir -p /tmp/vl-plugin \
+    && tar xzf /tmp/vl-plugin.tar.gz -C /tmp/vl-plugin \
+    && PLUGIN_DIR="$(find /tmp/vl-plugin -name plugin.json | head -n 1 | xargs dirname)" \
+    && cp -r "${PLUGIN_DIR}"/* /out/var/lib/grafana/plugins/victoriametrics-logs-datasource/ \
+    && find /out/var/lib/grafana/plugins/victoriametrics-logs-datasource -type f -name 'victoriametrics_logs_backend_plugin_*' ! -name "victoriametrics_logs_backend_plugin_linux_${TARGETARCH}" -delete \
+    && find /out/var/lib/grafana/plugins/victoriametrics-logs-datasource -type f -name '*.map' -delete \
+    && rm -f /out/var/lib/grafana/plugins/victoriametrics-logs-datasource/MANIFEST.txt \
+    && cp -r /tmp/provisioning/datasources/* /out/etc/grafana/provisioning/datasources/ \
+    && cp -r /tmp/provisioning/dashboards/* /out/etc/grafana/provisioning/dashboards/ \
+    && sed -i 's#${DS_VICTORIAMETRICS-LOGS-DATASOURCE}#victorialogs#g' /out/etc/grafana/provisioning/dashboards/*.json \
+    && chmod +x /out/usr/local/victorialogs/victoria-logs-prod \
+    && find /out/var/lib/grafana/plugins -type f -name 'victoriametrics_logs_backend_plugin_*' -exec chmod +x {} +
+
+FROM grafana/grafana:13.2.4-slim
+
+USER root
+COPY --from=components /out/usr/local/victorialogs /usr/local/victorialogs
+COPY --from=components /out/var/lib/grafana/plugins /var/lib/grafana/plugins
+COPY --from=components /out/etc/grafana/provisioning /etc/grafana/provisioning
+COPY scripts/entrypoint-slim.sh /usr/local/bin/entrypoint-slim.sh
+
+RUN mkdir -p /data/victorialogs /var/lib/grafana/data \
+    && chmod +x /usr/local/bin/entrypoint-slim.sh \
+    && chown -R grafana:grafana /data/victorialogs /var/lib/grafana/plugins /etc/grafana/provisioning
+
+ENV GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+WORKDIR /usr/share/grafana
+EXPOSE 9428 3000
+ENTRYPOINT ["/usr/local/bin/entrypoint-slim.sh"]

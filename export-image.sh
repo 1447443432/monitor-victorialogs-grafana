@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-IMAGE="registry.cn-hangzhou.aliyuncs.com/hap-mdy/hap-monitor-victorialogs-grafana-amd64:1.0.0"
+IMAGE="registry.cn-hangzhou.aliyuncs.com/hap-mdy/hap-monitor-victorialogs-grafana-amd64:1.1.0"
 OUT_DIR="./image-package"
-OUT_FILE="${OUT_DIR}/hap-monitor-victorialogs-grafana-amd64-1.0.0.tar.gz"
+OUT_FILE="${OUT_DIR}/hap-monitor-victorialogs-grafana-amd64-1.1.0.tar.gz"
 
 mkdir -p "${OUT_DIR}"
 

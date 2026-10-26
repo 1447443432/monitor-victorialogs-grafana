@@ -11,5 +11,5 @@ datasources:
     secureJsonData:
       basicAuthPassword: ${GRAFANA_VL_BASIC_AUTH_PASSWORD}
     jsonData:
-      maxLines: 2000000
+      maxLines: 1000
     editable: true

@@ -2,9 +2,9 @@ ARG BASE_IMAGE=alpine:3.23
 FROM ${BASE_IMAGE} AS builder
 
 ARG TARGETARCH=amd64
-ARG VL_PACKAGE=packages/victoria-logs-linux-${TARGETARCH}-v1.43.1.tar.gz
-ARG GRAFANA_PACKAGE=packages/grafana_13.1.1_29761037902_linux_${TARGETARCH}.tar.gz
-ARG VL_PLUGIN_PACKAGE=packages/victoriametrics-logs-datasource-v0.23.5.tar.gz
+ARG VL_PACKAGE=packages/victoria-logs-linux-${TARGETARCH}-v1.53.0.tar.gz
+ARG GRAFANA_PACKAGE=packages/grafana_13.2.4_38252365904_linux_${TARGETARCH}.tar.gz
+ARG VL_PLUGIN_PACKAGE=packages/victoriametrics-logs-datasource-v0.33.1.tar.gz
 
 COPY ${VL_PACKAGE} /tmp/victoria-logs.tar.gz
 COPY ${GRAFANA_PACKAGE} /tmp/grafana.tar.gz

@@ -8,5 +8,10 @@ tmp
 *.bak
 *.old
 
+# Package maintenance files stay on the host and are never copied into images.
+download-packages.cmd
+scripts/download-packages.ps1
+packages/package-manifest.yaml
+
 !packages/
 !packages/*.tar.gz
