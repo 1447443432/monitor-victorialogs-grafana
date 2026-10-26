@@ -52,7 +52,7 @@ export GRAFANA_VL_BASIC_AUTH_USER="$MONITOR_AUTH_USERNAME"
 export GRAFANA_VL_BASIC_AUTH_PASSWORD="$MONITOR_AUTH_PASSWORD"
 
 if [ "$START_GF" = true ]; then
-  /usr/share/grafana/bin/grafana --homepath=/usr/share/grafana server &
+  /usr/share/grafana/bin/grafana server --homepath=/usr/share/grafana &
   GF_PID="$!"
 else
   echo "Grafana disabled (MONITOR_SERVICES=$MONITOR_SERVICES)."

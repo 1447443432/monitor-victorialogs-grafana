@@ -118,8 +118,8 @@ if [ "$START_GF" = true ]; then
 ###############################################################################
 
   /usr/local/grafana/bin/grafana \
-    --homepath=/usr/local/grafana \
-    server &
+    server \
+    --homepath=/usr/local/grafana &
 
   GF_PID="$!"
 else
