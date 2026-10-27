@@ -39,7 +39,7 @@ services:
       VL_LOGGER_LEVEL: INFO
 
       # Grafana 外部访问地址；反向代理或子路径部署时修改
-      GRAFANA_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/"
+      GRAFANA_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/victorialogs-grafana/"
       # ROOT_URL 含子路径为 true；根路径访问为 false
       GRAFANA_SERVER_SERVE_FROM_SUB_PATH: "true"
       GRAFANA_ADMIN_USER: admin

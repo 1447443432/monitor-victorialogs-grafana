@@ -224,7 +224,7 @@ docker compose logs -f hap-monitor-logs
 | `MONITOR_AUTH_USERNAME` / `MONITOR_AUTH_PASSWORD` | 保留，生产环境必改 | `myuser` / `mypassword` | 唯一对外认证变量；同时用于 VictoriaLogs、Alloy 和 Grafana 数据源 | `1.1.0+` |
 | `MONITOR_SERVICES` | Compose 已省略 | `all` | `all` 启动 VictoriaLogs 和 Grafana；`victorialogs` 或 `grafana` 可单独启动；未配置或为空时为 `all` | `1.1.0+` |
 | `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` | 保留，必须修改 | `admin` / `admin@123456` | Grafana 管理员账号密码 | `1.0.0+` |
-| `GRAFANA_SERVER_ROOT_URL` | 保留，按部署方式修改 | `%(protocol)s://%(domain)s:%(http_port)s/` | 使用反向代理或子路径时填写外部访问地址 | `1.0.0+` |
+| `GRAFANA_SERVER_ROOT_URL` | 保留，按部署方式修改 | `%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/victorialogs-grafana/` | 使用反向代理或子路径时填写外部访问地址 | `1.0.0+` |
 | `GRAFANA_SERVER_SERVE_FROM_SUB_PATH` | 保留，需与 `ROOT_URL` 联动 | `true` | `GRAFANA_SERVER_ROOT_URL` 含子路径时为 `true`，根路径访问时为 `false` | `1.0.0+` |
 | `GRAFANA_ALLOW_UNSIGNED_PLUGINS` | Compose 已省略 | `victoriametrics-logs-datasource` | 启动脚本默认允许当前插件加载；通常无需修改，插件名称变化时再覆盖 | `1.0.0+` |
 | `TZ` | Compose 已省略 | `Asia/Shanghai` | 由启动脚本设置；需要时可通过 Compose 覆盖 | `1.0.0+` |

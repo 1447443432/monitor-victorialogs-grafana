@@ -79,7 +79,7 @@ if [ "$START_GF" = true ]; then
 # Grafana 基础配置
 ###############################################################################
 
-  export GF_SERVER_ROOT_URL="${GRAFANA_SERVER_ROOT_URL:-%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/grafana/}"
+  export GF_SERVER_ROOT_URL="${GRAFANA_SERVER_ROOT_URL:-%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/victorialogs-grafana/}"
 
   export GF_SERVER_SERVE_FROM_SUB_PATH="${GRAFANA_SERVER_SERVE_FROM_SUB_PATH:-true}"
 

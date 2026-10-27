@@ -19,7 +19,7 @@ services:
       MONITOR_AUTH_USERNAME: myuser
       MONITOR_AUTH_PASSWORD: mypassword
       # 外部访问 URL（反向代理/子路径时修改）
-      GRAFANA_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/grafana/"
+      GRAFANA_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/victorialogs-grafana/"
       # 与 GRAFANA_SERVER_ROOT_URL 联动：URL 含子路径为 true，根路径为 false
       GRAFANA_SERVER_SERVE_FROM_SUB_PATH: "true"
       # Grafana管理员账号（生产环境必改）

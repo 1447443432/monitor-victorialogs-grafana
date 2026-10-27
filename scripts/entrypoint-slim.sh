@@ -41,7 +41,7 @@ else
   echo "VictoriaLogs disabled (MONITOR_SERVICES=$MONITOR_SERVICES)."
 fi
 
-export GF_SERVER_ROOT_URL="${GRAFANA_SERVER_ROOT_URL:-%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/grafana/}"
+export GF_SERVER_ROOT_URL="${GRAFANA_SERVER_ROOT_URL:-%(protocol)s://%(domain)s:%(http_port)s/privatedeploy/mdy/monitor/victorialogs-grafana/}"
 export GF_SERVER_SERVE_FROM_SUB_PATH="${GRAFANA_SERVER_SERVE_FROM_SUB_PATH:-true}"
 export GF_SECURITY_ADMIN_USER="${GRAFANA_ADMIN_USER:-admin}"
 export GF_SECURITY_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-admin@123456}"
