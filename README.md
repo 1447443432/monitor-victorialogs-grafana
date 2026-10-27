@@ -232,27 +232,23 @@ docker compose logs -f hap-monitor-logs
 | `VL_STORAGE_DATA_PATH` | Compose 已省略 | `/data/victorialogs` | 修改目录时需同时修改 volumes | `1.0.0+` |
 | `VL_HTTP_LISTEN_ADDR` | Compose 已省略 | `:9428` | 修改端口时需同步 ports 和 Alloy 写入地址 | `1.0.0+` |
 | `GRAFANA_VL_DATASOURCE_URL` | Compose 已省略 | `http://127.0.0.1:9428` | 同一容器内 VictoriaLogs 地址 | `1.0.0+` |
-| `VL_RETENTION_*`、并发、超时、日志级别 | Compose 已省略 | 见 `scripts/entrypoint.sh` | 按需通过 Compose environment 覆盖 | `1.0.0+` |
+| `VL_RETENTION_PERIOD` | Compose 已省略 | `30d` | 按时间保留日志；超过期限的数据清理。 | `1.0.0+` |
+| `VL_RETENTION_DISK_USAGE` | Compose 已省略 | `50GiB` | VictoriaLogs 数据目录最大磁盘占用；与时间保留同时生效。 | `1.0.0+` |
+| `VL_MEMORY_ALLOWED_PERCENT` | Compose 已省略 | `2` | VictoriaLogs 内存使用比例参数，单位为百分比。 | `1.0.0+` |
+| `VL_MAX_CONCURRENT_INSERTS` | Compose 已省略 | `4` | 最大并发写入请求数；过高会增加 CPU、内存和磁盘压力。 | `1.0.0+` |
+| `VL_MAX_CONCURRENT_REQUESTS` | Compose 已省略 | `2` | 最大并发查询请求数；超过后进入等待队列。 | `1.0.0+` |
+| `VL_SEARCH_MAX_QUERY_DURATION` | Compose 已省略 | `30s` | 单次查询最长执行时间，超时终止查询。 | `1.0.0+` |
+| `VL_SEARCH_MAX_QUERY_TIMERANGE` | Compose 已省略 | `24h` | 单次查询允许的最大时间范围。 | `1.0.0+` |
+| `VL_SEARCH_MAX_QUEUE_DURATION` | Compose 已省略 | `5s` | 查询在并发队列中的最长等待时间。 | `1.0.0+` |
+| `VL_SEARCH_LOG_SLOW_QUERY_DURATION` | Compose 已省略 | `3s` | 查询耗时达到该值时记录慢查询日志。 | `1.0.0+` |
+| `VL_INSERT_MAX_LINE_SIZE_BYTES` | Compose 已省略 | `262144` | 单条日志最大字节数，即 256 KiB；超出会拒绝写入。 | `1.0.0+` |
+| `VL_INSERT_MAX_FIELDS_PER_LINE` | Compose 已省略 | `300` | 单条日志允许的最大字段数。 | `1.0.0+` |
+| `VL_SYSLOG_EXTRA_FIELDS_TCP` | Compose 已省略 | `{"job":"rsyslog"}` | TCP Syslog 写入时附加的 JSON 字段。 | `1.0.0+` |
+| `VL_LOGGER_LEVEL` | Compose 已省略 | `INFO` | VictoriaLogs 日志级别，常用值为 `DEBUG`、`INFO`、`WARN`、`ERROR`。 | `1.0.0+` |
 
 服务模式说明：使用 `MONITOR_SERVICES=grafana` 时，必须将 `GRAFANA_VL_DATASOURCE_URL` 改为外部 VictoriaLogs 地址；`MONITOR_SERVICES=victorialogs` 时只启动 VictoriaLogs，不启动 Grafana。
 
-Compose 已省略的 VictoriaLogs 默认值固定如下；需要调整时再在 `environment` 中增加对应变量覆盖：
-
-~~~text
-VL_RETENTION_PERIOD=30d
-VL_RETENTION_DISK_USAGE=50GiB
-VL_MEMORY_ALLOWED_PERCENT=2
-VL_MAX_CONCURRENT_INSERTS=4
-VL_MAX_CONCURRENT_REQUESTS=2
-VL_SEARCH_MAX_QUERY_DURATION=30s
-VL_SEARCH_MAX_QUERY_TIMERANGE=24h
-VL_SEARCH_MAX_QUEUE_DURATION=5s
-VL_SEARCH_LOG_SLOW_QUERY_DURATION=3s
-VL_INSERT_MAX_LINE_SIZE_BYTES=262144
-VL_INSERT_MAX_FIELDS_PER_LINE=300
-VL_SYSLOG_EXTRA_FIELDS_TCP={"job":"rsyslog"}
-VL_LOGGER_LEVEL=INFO
-~~~
+未配置或值为空时使用表中默认值；需要调整时，在 Compose 的 `environment` 中增加对应变量覆盖。并发、超时和磁盘上限应结合主机资源及日志量调整；修改写入目录或监听地址时，还需同步检查 volumes、端口映射和 Alloy 配置。
 
 `1.1.0` 没有新增 Docker Compose 必填环境变量；`1.1.0+` 的变化主要是面向 Alloy 的采集字段约定和 Dashboard 配置。Alloy 的采集配置不写入本镜像的 Compose 环境变量中，应在 Alloy 侧配置并将日志写入 VictoriaLogs。
 

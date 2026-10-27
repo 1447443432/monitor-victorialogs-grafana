@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths-ignore:
       - agents/**
+      - README.md
   workflow_dispatch:
     inputs:
       operation:
